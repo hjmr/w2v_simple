@@ -12,6 +12,7 @@ matplotlib = "*"
 janome = "*"
 gensim = "*"
 scikit-learn = "*"
+mecab-python3 = "*"
 
 [requires]
 python_version = "3.8"

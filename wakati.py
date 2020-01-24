@@ -1,23 +1,42 @@
 # -*- coding: utf-8 -*-
 
-from janome.tokenizer import Tokenizer
 import sys
+import argparse
 
-t = Tokenizer()
+from janome.tokenizer import Tokenizer
 
-fi = open(sys.argv[1], 'r')
-fo = open(sys.argv[2], 'w')
 
-line = fi.readline()
-while line:
-    token_list = t.tokenize(line.strip())
-    word_list = []
-    for token in token_list:
-        pos = token.part_of_speech.split(',')[0]
-        if pos == '名詞' or pos == '動詞' or pos == '形容詞' or pos == '形容動詞':
-            word_list.append(token.base_form)
-    fo.write(' '.join(word_list))
-    line = fi.readline()
+def parse_arg():
+    parser = argparse.ArgumentParser(description="Convert japanese text into Wakati-gaki text.")
+    parser.add_argument("-i", "--input", type=str, nargs=1,
+                        help="japanese text.")
+    parser.add_argument("-o", "--output", type=str,
+                        help="file to which resulting wakati-gaki text will be saved.")
+    parser.add_argument("-p", "--pos", type=str, default="名詞,動詞",
+                        help="comma seperated part-of-speech like 名詞,動詞")
+    return parser.parse_args()
 
-fi.close()
-fo.close()
+
+def main():
+    args = parse_arg()
+    pos = args.pos.split(',')
+
+    t = Tokenizer()
+    with open(args.input[0], "r") as fi:
+        for line in fi:
+            token_list = t.tokenize(line.strip())
+            word_list = []
+            for token in token_list:
+                p = token.part_of_speech.split(',')[0]
+                if p in pos:
+                    word_list.append(token.base_form)
+    wakati = ' '.join(word_list)
+    if args.output is not None:
+        with open(args.output, "w") as fo:
+            fo.write(wakati)
+    else:
+        print(wakati)
+
+
+if __name__ == "__main__":
+    main()

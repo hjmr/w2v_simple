@@ -1,11 +1,30 @@
 # -*- coding: utf-8 -*-
 
-from gensim.models import word2vec
 import sys
+import argparse
 
-model   = word2vec.Word2Vec.load(sys.argv[1])
-results = model.most_similar(positive=sys.argv[2], topn=10)
+from gensim.models import word2vec
 
-for result in results:
-    print(result[0], '\t', result[1])
 
+def parse_arg():
+    parser = argparse.ArgumentParser(description="Similarity calculation.")
+    parser.add_argument("-m", "--model", type=str, nargs=1,
+                        help="Word2Vec model.")
+    parser.add_argument("-n", "--num", type=int, default=10,
+                        help="the number of similar words to be shown as a result.")
+    parser.add_argument("WORDS", type=str, nargs='+',
+                        help="words for searching similar words.")
+    return parser.parse_args()
+
+
+def main():
+    args = parse_arg()
+    model = word2vec.Word2Vec.load(args.model[0])
+    for w in args.WORDS:
+        results = model.most_similar(positive=w, topn=args.num)
+        for result in results:
+            print(result[0], '\t', result[1])
+
+
+if __name__ == "__main__":
+    main()
