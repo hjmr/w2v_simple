@@ -1,9 +1,12 @@
 import sys
 import argparse
+import collections
 
 import numpy as np
-from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
+from matplotlib.colors import LinearSegmentedColormap
+import japanize_matplotlib
 from gensim.models import word2vec
 
 
@@ -16,42 +19,62 @@ def parse_arg():
     parser.add_argument("--font_size", type=int, default=24, help="font size.")
     parser.add_argument("--width", type=int, default=40, help="plot width.")
     parser.add_argument("--height", type=int, default=40, help="plot height.")
+    parser.add_argument("wakati_files", type=str, nargs="*", help="wakati files to be plotted.")
     return parser.parse_args()
 
 
 def get_converter(x):
-    converter = TSNE(n_components=2, random_state=0)
-    np.set_printoptions(suppress=True)
-    converter.fit_transform(x)
+    converter = PCA(random_state=0)
+    converter.fit(x)
     return converter
 
 
-def make_plot(vocab, skip, num, converter, width, height, font_size):
+def make_plot(model, conv, vocab_list, skip, num, width, height, font_size):
     plt.rcParams["font.size"] = font_size
     fig = plt.figure(figsize=(width, height))  # 図のサイズ
-    plt.scatter(converter.embedding_[skip:skip+num-1, 0],
-                converter.embedding_[skip:skip+num-1, 1])
+    cmap = ["red", "blue", "green"]
+    for i, vocab in enumerate(vocab_list):
+        available_vocab = []
+        orig_pos = []
+        for j in range(skip, len(vocab)):
+            try:
+                p = model.wv[vocab[j]]
+                available_vocab.append(vocab[j])
+                orig_pos.append(p)
+            except Error as e:
+                continue
 
-    count = 0
-    for label, x, y in zip(vocab, converter.embedding_[:, 0], converter.embedding_[:, 1]):
-        count += 1
-        if(count <= skip):
-            continue
-        plt.annotate(label, xy=(x, y), xytext=(0, 0), textcoords='offset points')
-        if(count == skip + num):
-            break
+        emb_pos = conv.transform(orig_pos)
+        plt.scatter(emb_pos[:, 0], emb_pos[:, 1], c=cmap[i % len(cmap)])
+        for label, x, y in zip(available_vocab, emb_pos[:, 0], emb_pos[:, 1]):
+            plt.annotate(label, xy=(x, y), xytext=(0, 0), textcoords='offset points')
     return fig
+
+
+def vocab_from_file(wakati_file):
+    v = []
+    with open(wakati_file, "r") as f:
+        for line in f:
+            v.extend(line.strip().split(" "))
+    c = collections.Counter(v)
+    v, _ = zip(*c.most_common())
+    return v
 
 
 def main():
     args = parse_arg()
-    word2vec_model = word2vec.Word2Vec.load(args.model[0])
+    w2v_model = word2vec.Word2Vec.load(args.model[0])
 
-    vocab = word2vec_model.wv.index2word
-    emb_tuple = tuple([word2vec_model[v] for v in vocab])
+    vocab = w2v_model.wv.index2word
+    emb_tuple = tuple([w2v_model.wv[v] for v in vocab])
     converter = get_converter(np.vstack(emb_tuple))
 
-    fig = make_plot(vocab, args.skip, args.num, converter, args.width, args.height, args.font_size)
+    if 0 < len(args.wakati_files):
+        vocab_list = [vocab_from_file(f) for f in args.wakati_files]
+    else:
+        vocab_list = [vocab]
+
+    fig = make_plot(w2v_model, converter, vocab_list, args.skip, args.num, args.width, args.height, args.font_size)
 
     if args.output is not None:
         fig.savefig(args.output)
