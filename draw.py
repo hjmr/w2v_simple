@@ -16,6 +16,7 @@ def parse_arg():
     parser.add_argument("-s", "--skip", type=int, default=0, help="the number of words to skip.")
     parser.add_argument("-n", "--num", type=int, default=200, help="the number of words to plot.")
     parser.add_argument("-o", "--output", type=str, help="Save figure to the file.")
+    parser.add_argument("--plot_original", action="store_true", help="plot original vocabs in gray dots.")
     parser.add_argument("--font_size", type=int, default=24, help="font size.")
     parser.add_argument("--width", type=int, default=40, help="plot width.")
     parser.add_argument("--height", type=int, default=40, help="plot height.")
@@ -29,10 +30,16 @@ def get_converter(x):
     return converter
 
 
-def make_plot(model, conv, vocab_list, skip, num, width, height, font_size):
+def make_plot(model, conv, vocab_list, plot_orig, orig_vocab, skip, num, width, height, font_size):
     plt.rcParams["font.size"] = font_size
     fig = plt.figure(figsize=(width, height))  # 図のサイズ
-    cmap = ["red", "blue", "green"]
+    cmap = ["red", "blue", "green", "magenta", "cyan", "yellow", "black"]
+
+    if plot_orig:
+        orig_pos = [model.wv[v] for v in orig_vocab]
+        emb_pos = conv.transform(orig_pos)
+        plt.scatter(emb_pos[:, 0], emb_pos[:, 1], c="gray")
+
     for i, vocab in enumerate(vocab_list):
         available_vocab = []
         orig_pos = []
@@ -41,7 +48,7 @@ def make_plot(model, conv, vocab_list, skip, num, width, height, font_size):
                 p = model.wv[vocab[j]]
                 available_vocab.append(vocab[j])
                 orig_pos.append(p)
-            except Error as e:
+            except:
                 continue
 
         emb_pos = conv.transform(orig_pos)
@@ -69,12 +76,17 @@ def main():
     emb_tuple = tuple([w2v_model.wv[v] for v in vocab])
     converter = get_converter(np.vstack(emb_tuple))
 
+    orig_vocab = vocab if args.plot_original else None
+
     if 0 < len(args.wakati_files):
         vocab_list = [vocab_from_file(f) for f in args.wakati_files]
     else:
         vocab_list = [vocab]
 
-    fig = make_plot(w2v_model, converter, vocab_list, args.skip, args.num, args.width, args.height, args.font_size)
+    fig = make_plot(w2v_model, converter, vocab_list,
+                    args.plot_original, orig_vocab,
+                    args.skip, args.num,
+                    args.width, args.height, args.font_size)
 
     if args.output is not None:
         fig.savefig(args.output)
