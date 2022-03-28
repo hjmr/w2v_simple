@@ -14,7 +14,7 @@ def parse_arg():
     return parser.parse_args()
 
 
-def neighbor_word(posi, nega=[], n=10):
+def neighbor_word(model, posi, nega=[], n=20):
     count = 1
     result = model.most_similar(positive=posi, negative=nega, topn=n)
     for r in result:
@@ -22,9 +22,9 @@ def neighbor_word(posi, nega=[], n=10):
         count += 1
 
 
-def calc(equation):
+def calc(model, equation):
     if "+" not in equation or "-" not in equation:
-        neighbor_word([equation])
+        neighbor_word(model, [equation])
     else:
         posi, nega = [], []
         positives = equation.split("+")
@@ -32,13 +32,13 @@ def calc(equation):
             negatives = positive.split("-")
             posi.append(negatives[0])
             nega = nega + negatives[1:]
-        neighbor_word(posi=posi, nega=nega)
+        neighbor_word(model, posi=posi, nega=nega)
 
 
 def main():
     args = parse_arg()
     model = word2vec.Word2Vec.load(args.model[0])
-    calc(args.equation)
+    calc(model, args.equation)
 
 
 if __name__ == "__main__":
