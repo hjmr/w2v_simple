@@ -11,9 +11,8 @@ gensim = "*"
 scikit-learn = "*"
 japanize-matplotlib = "*"
 mecab = "*"
-bs4 = "*"
+beautifulsoup4 = "*"
 requests = "*"
-
 
 [build-system]
 requires = ["poetry-core"]
