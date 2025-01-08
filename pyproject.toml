@@ -7,10 +7,12 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.10"
-gensim = "^4.2.0"
-scikit-learn = "^1.2.0"
-japanize-matplotlib = "^1.1.3"
-mecab = "^0.996.3"
+gensim = "*"
+scikit-learn = "*"
+japanize-matplotlib = "*"
+mecab = "*"
+bs4 = "*"
+requests = "*"
 
 
 [build-system]
